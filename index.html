@@ -1,12 +1,274 @@
 <html>
-    <head>
-        <title>Storytelling project</title>
-        <script src="d3.js"></script>
-    </head>
-    <body>
-        <div>My amazing page will goes here</div>
-    </body>
-    <script>
-        console.log(d3);
-    </script>
+  <head>
+    <style>
+      body {
+        font-family: Helvetica, Arial, sans-serif;
+      }
+
+		  #Box1,#Box2,#Box3,#Box4 {
+			  /* border: 1px solid black; */
+        padding: 5px;
+        margin: 5px;
+		  }
+
+      #Legend1,#Legend2,#Legend3,#Legend4 {
+        border: 1px solid black;
+        padding: 5px;
+        margin-top: 5px;
+      }
+
+      .divBox {
+        border: 1px solid black;
+        width: 1240;
+        margin-left: 22%;
+        display: flex;
+      }
+    </style>
+    <script src="d3.js"></script>
+  </head>
+  <body>
+    <div class="mainView">
+      <div class="divBox">
+        <svg id="Box1"></svg>
+        <svg id="Legend1"></svg>
+      </div>
+      <div class="divBox">
+        <svg id="Box2"></svg>
+        <svg id="Legend2"></svg>
+      </div>
+      <div class="divBox">
+        <svg id="Box3"></svg>
+        <svg id="Legend3"></svg>
+      </div>
+      <div class="divBox">
+        <svg id="Box4"></svg>
+        <svg id="Legend4"></svg>
+      </div>
+    </div>
+  </body>
+  <script>
+      let store = {};
+
+      function loadData() {
+        return Promise.all([
+            d3.csv("epl_league_stats.csv")
+        ]).then(datasets => {
+            store.data = datasets[0];
+            return store;
+        })
+      }
+
+      function getBoxConfig() {
+        // Default values of width and height
+        let width = 920;
+        let height = 920;
+        let container1 = d3.select("#Box1");
+        let container2 = d3.select("#Box2");
+        let container3 = d3.select("#Box3");
+        let container4 = d3.select("#Box4");
+        let legendContainer1 = d3.select("#Legend1");
+        let legendContainer2 = d3.select("#Legend2");
+        let legendContainer3 = d3.select("#Legend3");
+        let legendContainer4 = d3.select("#Legend4");
+
+        container1
+          .attr("width", width)
+          .attr("height", height)
+        legendContainer1
+          .attr("width", width/3.25)
+          .attr("height", height/4)
+        container2
+          .attr("width", width+50)
+          .attr("height", height)
+        legendContainer2
+          .attr("width", width/4)
+          .attr("height", height/4)
+        container3
+          .attr("width", width+50)
+          .attr("height", height)
+        legendContainer3
+          .attr("width", width/4)
+          .attr("height", height/4)
+        container4
+          .attr("width", width+50)
+          .attr("height", height)
+        legendContainer4
+          .attr("width", width/4)
+          .attr("height", height/4)
+        return {width, height, container1, container2, container3, container4, legendContainer1, legendContainer2, legendContainer3, legendContainer4}
+      }
+
+      function leaguePositionMatrix(container, legendContainer){
+        let matrixViz = container.append("g")
+                                 .attr("transform", "translate(150,50)")
+        let eplStatsSummaryByName = d3.nest()
+                                      .key((d)=> { return d.epl_team; })
+                                      .rollup((v)=> { return d3.mean(v, (d)=> { return d.season_position; }); })
+                                      .entries(store.data);
+        eplStatsSummaryByName.sort((x,y)=>{
+          return d3.ascending(x.value,y.value);
+        })
+        console.log(eplStatsSummaryByName);
+        let epl_team_list = [];
+        let epl_season_list = [];
+        eplStatsSummaryByName.forEach((element)=> {
+          epl_team_list.push(element.key);
+        });
+        store.data.forEach((element)=> {
+          epl_season_list.push(element.epl_season);
+        });
+        epl_team_list = Array.from(new Set(epl_team_list));
+        epl_season_list = Array.from(new Set(epl_season_list));
+        let yScale = d3.scaleBand()
+                       .domain(epl_team_list)
+                       .range([0,850]);
+        let xScale = d3.scaleBand()
+                       .domain(epl_season_list)
+                       .range([0,750]);
+        let xAxis = d3.axisTop(xScale);
+        let yAxis = d3.axisLeft(yScale);
+        let xAxisGroup = container.append("g")
+                                  .attr("transform", "translate(150,50)")
+                                  .call(xAxis)
+        let yAxisGroup = container.append("g")
+                                  .attr("transform", "translate(150,50)")
+                                  .call(yAxis)
+        let yAxisLabel = container.append("text")
+                                  .attr("transform", "translate(70,40)")
+                                  .text("Epl Team")
+        let xAxisLabel = container.append("text")
+                                  .attr("transform", "translate(480,20)")
+                                  .text("Epl Season")
+        let cScaleTopFour = d3.scaleLinear()
+                              .domain([1,2.5,4])
+                              .range(["#e5f5e0","#a1d99b","#31a354"])
+        let cScaleBottomThree = d3.scaleLinear()
+                                  .domain([18,19,20])
+                                  .range(["#fee6ce","#fdae6b","#e6550d"])
+        matrixViz.selectAll("rect")
+                 .data(store.data)
+                 .enter()
+                 .append("rect")
+                 .attr("fill",d=> {
+                   if(d.season_position<=4){
+                     return cScaleTopFour(d.season_position);
+                   }else if(d.season_position>=18){
+                     return cScaleBottomThree(d.season_position);
+                   }else{
+                     return "#D3D3D3";
+                   }
+                 })
+                 .attr("width", xScale.bandwidth())
+                 .attr("height", yScale.bandwidth())
+                 .attr("y", d=> yScale(d.epl_team))
+                 .attr("x", d=> xScale(d.epl_season))
+                 .attr("stroke", "#C0C0C0")
+
+        let legendLabel = legendContainer.append("text")
+                                         .attr("transform", "translate(90,20)")
+                                         .text("Season Position")
+        let topFourTeamLegendScale = d3.scaleBand()
+                                       .domain(["1","2","3","4"])
+                                       .range([0,200]);
+        let bottomThreeTeamLegendScale = d3.scaleBand()
+                                           .domain(["18","19","20"])
+                                           .range([0,200]);
+        let topFourTeamLegendAxis = d3.axisTop(topFourTeamLegendScale);
+        let bottomThreeTeamLegendAxis = d3.axisTop(bottomThreeTeamLegendScale);
+        let topFourTeamLegendAxisGroup = legendContainer.append("g")
+                                  .attr("transform", "translate(50,60)")
+                                  .call(topFourTeamLegendAxis)
+        let bottomThreeTeamLegendAxisGroup = legendContainer.append("g")
+                                                            .attr("transform", "translate(50,140)")
+                                                            .call(bottomThreeTeamLegendAxis)
+        let topFourTeamLegend = legendContainer.append("g")
+                                               .attr("transform", "translate(50,60)")
+        let bottomThreeTeamLegend = legendContainer.append("g")
+                                                   .attr("transform", "translate(50,140)")
+        let topFourTeamLegendData = [
+          {lp_cat:"1",lp_ord:1},
+          {lp_cat:"2",lp_ord:2},
+          {lp_cat:"3",lp_ord:3},
+          {lp_cat:"4",lp_ord:4}
+        ]
+        let bottomThreeTeamLegendData = [
+          {lp_cat:"18",lp_ord:18},
+          {lp_cat:"19",lp_ord:19},
+          {lp_cat:"20",lp_ord:20}
+        ]
+        topFourTeamLegend.selectAll("rect")
+                         .data(topFourTeamLegendData)
+                         .enter()
+                         .append("rect")
+                         .attr("fill",d=> cScaleTopFour(d.lp_ord))
+                         .attr("width", topFourTeamLegendScale.bandwidth())
+                         .attr("height", 30)
+                         .attr("x", d=> topFourTeamLegendScale(d.lp_cat))
+
+        bottomThreeTeamLegend.selectAll("rect")
+                             .data(bottomThreeTeamLegendData)
+                             .enter()
+                             .append("rect")
+                             .attr("fill",d=> cScaleBottomThree(d.lp_ord))
+                             .attr("width", bottomThreeTeamLegendScale.bandwidth())
+                             .attr("height", 30)
+                             .attr("x", d=> bottomThreeTeamLegendScale(d.lp_cat))
+      }
+
+      function winDrawLossStackedBarChart(container, legendContainer, eplseason){
+        let barChartViz = container.append("g")
+                                   .attr("transform", "translate(150,50)")
+        filteredDataBySeason = store.data.filter(d=>{return d.epl_season == eplseason;})
+        filteredDataBySeason = filteredDataBySeason.map(d=>{
+          d.season_position = +d.season_position;
+          return d;
+        })
+        filteredDataBySeason.sort((x,y)=>{
+          return d3.ascending(x.season_position,y.season_position);
+        })
+        console.log(filteredDataBySeason);
+        let epl_team_list = [];
+        filteredDataBySeason.forEach((element)=> {
+          epl_team_list.push(element.epl_team);
+        });
+        let yScale = d3.scaleBand()
+                       .domain(epl_team_list)
+                       .range([0,850]);
+        let yAxis = d3.axisLeft(yScale);
+        let yAxisGroup = container.append("g")
+                                  .attr("transform", "translate(150,50)")
+                                  .call(yAxis)
+        let yAxisLabel = container.append("text")
+                                  .attr("transform", "translate(70,40)")
+                                  .text("Epl Team")
+        barChartViz.selectAll("rect")
+                   .data(filteredDataBySeason)
+                   .enter()
+                   .append("rect")
+                   .attr("fill","Blue")
+                   .attr("width", 5)
+                   .attr("height", yScale.bandwidth())
+                   .attr("y", d=> yScale(d.epl_team))
+                   .attr("stroke", "Black")
+      }
+
+      function goalDifferenceBarChart(container, legendContainer, eplseason){
+
+      }
+
+      function totalPassesBarChart(container, legendContainer, eplseason){
+
+      }
+
+      function drawViz() {
+          let config = getBoxConfig();
+          leaguePositionMatrix(config.container1, config.legendContainer1);
+          winDrawLossStackedBarChart(config.container2, config.legendContainer2, "2006/2007");
+          goalDifferenceBarChart(config.container3, config.legendContainer3, "2006/2007");
+          totalPassesBarChart(config.container4, config.legendContainer4, "2006/2007");
+          console.log(store.data);
+      }
+
+      loadData().then(drawViz);
+  </script>
 </html>
