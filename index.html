@@ -79,19 +79,19 @@
           .attr("height", height/4)
         container2
           .attr("width", width+50)
-          .attr("height", height)
+          .attr("height", height+50)
         legendContainer2
           .attr("width", width/4)
           .attr("height", height/4)
         container3
           .attr("width", width+50)
-          .attr("height", height)
+          .attr("height", height+50)
         legendContainer3
           .attr("width", width/4)
           .attr("height", height/4)
         container4
           .attr("width", width+50)
-          .attr("height", height)
+          .attr("height", height+50)
         legendContainer4
           .attr("width", width/4)
           .attr("height", height/4)
@@ -216,11 +216,18 @@
       }
 
       function winDrawLossStackedBarChart(container, legendContainer, eplseason){
-        let barChartViz = container.append("g")
-                                   .attr("transform", "translate(150,50)")
+        let winBarChartViz = container.append("g")
+                                      .attr("transform", "translate(150,50)")
+        let drawBarChartViz = container.append("g")
+                                       .attr("transform", "translate(150,50)")
+        let lossBarChartViz = container.append("g")
+                                       .attr("transform", "translate(150,50)")
         filteredDataBySeason = store.data.filter(d=>{return d.epl_season == eplseason;})
         filteredDataBySeason = filteredDataBySeason.map(d=>{
           d.season_position = +d.season_position;
+          d.matches_won = +d.matches_won;
+          d.matches_lost = +d.matches_lost;
+          d.matches_drawn = +d.matches_drawn;
           return d;
         })
         filteredDataBySeason.sort((x,y)=>{
@@ -231,10 +238,97 @@
         filteredDataBySeason.forEach((element)=> {
           epl_team_list.push(element.epl_team);
         });
+        let maxOfSumOfWinsDrawsLosses = d3.max(filteredDataBySeason, d=> (d.matches_won+d.matches_lost+d.matches_drawn));
+        let xScale = d3.scaleLinear()
+                       .range([0,800])
+                       .domain([0,maxOfSumOfWinsDrawsLosses])
         let yScale = d3.scaleBand()
                        .domain(epl_team_list)
-                       .range([0,850]);
+                       .range([0,850])
+                       .padding(0.1);
+        let xAxis = d3.axisBottom(xScale);
         let yAxis = d3.axisLeft(yScale);
+        let xAxisGroup = container.append("g")
+                                  .attr("transform", "translate(150,900)")
+                                  .call(xAxis)
+        let xAxisLabel = container.append("text")
+                                  .attr("transform", "translate(500,950)")
+                                  .text("Proportion of Wins, Draws & Losses")
+        let yAxisGroup = container.append("g")
+                                  .attr("transform", "translate(150,50)")
+                                  .call(yAxis)
+        let yAxisLabel = container.append("text")
+                                  .attr("transform", "translate(70,40)")
+                                  .text("Epl Team")
+        winBarChartViz.selectAll("rect")
+                   .data(filteredDataBySeason)
+                   .enter()
+                   .append("rect")
+                   .attr("fill","#7570b3")
+                   .attr("width", d=> xScale(d.matches_won))
+                   .attr("height", yScale.bandwidth())
+                   .attr("y", d=> yScale(d.epl_team))
+        drawBarChartViz.selectAll("rect")
+                       .data(filteredDataBySeason)
+                       .enter()
+                       .append("rect")
+                       .attr("fill","#d95f02")
+                       .attr("width", d=> xScale(d.matches_drawn))
+                       .attr("height", yScale.bandwidth())
+                       .attr("y", d=> yScale(d.epl_team))
+                       .attr("x", d=> xScale(d.matches_won))
+        lossBarChartViz.selectAll("rect")
+                       .data(filteredDataBySeason)
+                       .enter()
+                       .append("rect")
+                       .attr("fill","#1b9e77")
+                       .attr("width", d=> xScale(d.matches_lost))
+                       .attr("height", yScale.bandwidth())
+                       .attr("y", d=> yScale(d.epl_team))
+                       .attr("x", d=> xScale(d.matches_won+d.matches_drawn))
+      }
+
+      function goalDifferenceBarChart(container, legendContainer, eplseason){
+        let barChartViz = container.append("g")
+                                   .attr("transform", "translate(150,50)")
+        filteredDataBySeason = store.data.filter(d=>{return d.epl_season == eplseason;})
+        filteredDataBySeason = filteredDataBySeason.map(d=>{
+          d.season_position = +d.season_position;
+          d.goal_difference = +d.goal_difference;
+          return d;
+        })
+        filteredDataBySeason.sort((x,y)=>{
+          return d3.ascending(x.season_position,y.season_position);
+        })
+        console.log(filteredDataBySeason);
+        let epl_team_list = [];
+        filteredDataBySeason.forEach((element)=> {
+          epl_team_list.push(element.epl_team);
+        });
+        let maxGoalDifference = d3.max(filteredDataBySeason, d=> d.goal_difference);
+        let minGoalDifference = d3.min(filteredDataBySeason, d=> d.goal_difference);
+        let xScale = d3.scaleLinear()
+                       .range([0,800])
+                       .domain([minGoalDifference-10,maxGoalDifference+5])
+        let positiveGoalDifferenceScale = d3.scaleLinear()
+                                            .range([0,480])
+                                            .domain([0,(maxGoalDifference+5)])
+        let negativeGoalDifferenceScale = d3.scaleLinear()
+                                            .range([0,320])
+                                            .domain([0,-(minGoalDifference-10)])
+
+        let yScale = d3.scaleBand()
+                       .domain(epl_team_list)
+                       .range([0,850])
+                       .padding(0.1);
+        let xAxis = d3.axisBottom(xScale);
+        let yAxis = d3.axisLeft(yScale);
+        let xAxisGroup = container.append("g")
+                                  .attr("transform", "translate(150,900)")
+                                  .call(xAxis)
+        let xAxisLabel = container.append("text")
+                                  .attr("transform", "translate(500,950)")
+                                  .text("Goal Difference")
         let yAxisGroup = container.append("g")
                                   .attr("transform", "translate(150,50)")
                                   .call(yAxis)
@@ -245,19 +339,79 @@
                    .data(filteredDataBySeason)
                    .enter()
                    .append("rect")
-                   .attr("fill","Blue")
-                   .attr("width", 5)
+                   .attr("fill","#7570b3")
+                   .attr("width", d=>{
+                      if(d.goal_difference<0){
+                          return negativeGoalDifferenceScale(-d.goal_difference);
+                      }
+                      else{
+                          return positiveGoalDifferenceScale(d.goal_difference);
+                      }
+                   })
                    .attr("height", yScale.bandwidth())
                    .attr("y", d=> yScale(d.epl_team))
-                   .attr("stroke", "Black")
-      }
-
-      function goalDifferenceBarChart(container, legendContainer, eplseason){
-
+                   .attr("x", d=>{
+                      if(d.goal_difference<0){
+                          return (xScale(0)-negativeGoalDifferenceScale(-d.goal_difference));
+                      }
+                      else{
+                          return (xScale(0));
+                      }
+                   })
       }
 
       function totalPassesBarChart(container, legendContainer, eplseason){
-
+        let barChartViz = container.append("g")
+                                   .attr("transform", "translate(150,50)")
+        filteredDataBySeason = store.data.filter(d=>{return d.epl_season == eplseason;})
+        filteredDataBySeason = filteredDataBySeason.map(d=>{
+          d.season_position = +d.season_position;
+          d.total_through_balls = +d.total_through_balls;
+          d.total_passes = +d.total_passes;
+          d.total_long_balls = +d.total_long_balls;
+          d.total_crosses = +d.total_crosses;
+          d.total_backward_pass = +d.total_backward_pass;
+          d.total_passes_completed = d.total_through_balls+d.total_passes+d.total_long_balls+d.total_crosses+d.total_backward_pass;
+          return d;
+        })
+        filteredDataBySeason.sort((x,y)=>{
+          return d3.ascending(x.season_position,y.season_position);
+        })
+        console.log(filteredDataBySeason);
+        let epl_team_list = [];
+        filteredDataBySeason.forEach((element)=> {
+          epl_team_list.push(element.epl_team);
+        });
+        let maxPassesCompleted = d3.max(filteredDataBySeason, d=> d.total_passes_completed);
+        let xScale = d3.scaleLinear()
+                       .range([0,800])
+                       .domain([0,maxPassesCompleted])
+        let yScale = d3.scaleBand()
+                       .domain(epl_team_list)
+                       .range([0,850])
+                       .padding(0.1);
+        let xAxis = d3.axisBottom(xScale);
+        let yAxis = d3.axisLeft(yScale);
+        let xAxisGroup = container.append("g")
+                                  .attr("transform", "translate(150,900)")
+                                  .call(xAxis)
+        let xAxisLabel = container.append("text")
+                                  .attr("transform", "translate(500,950)")
+                                  .text("Total Passes")
+        let yAxisGroup = container.append("g")
+                                  .attr("transform", "translate(150,50)")
+                                  .call(yAxis)
+        let yAxisLabel = container.append("text")
+                                  .attr("transform", "translate(70,40)")
+                                  .text("Epl Team")
+        barChartViz.selectAll("rect")
+                   .data(filteredDataBySeason)
+                   .enter()
+                   .append("rect")
+                   .attr("fill","#7570b3")
+                   .attr("width", d=> xScale(d.total_passes_completed))
+                   .attr("height", yScale.bandwidth())
+                   .attr("y", d=> yScale(d.epl_team))
       }
 
       function drawViz() {
