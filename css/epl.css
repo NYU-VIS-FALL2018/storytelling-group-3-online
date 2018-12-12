@@ -23,7 +23,6 @@ body {
 
 .mainView {
   display: flex;
-  margin-left: 2%;
 }
 
 .childDivBox {
