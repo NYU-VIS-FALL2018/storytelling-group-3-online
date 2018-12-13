@@ -2,7 +2,7 @@
 
 **Authors**: Rahul Purushottam Gaonkar (rpg283), Achyut Tibrewalla (at3617), Divyanshu Singh (ds5387)
 
-Group 3 Online 
+Group 3 Online
 
 ![EPL_Logo](images/EPL_Logo.jpg)
 
@@ -14,4 +14,4 @@ The main goal of the project is to show how the distribution of teams change bas
 ## More
 [DEMO](https://nyu-vis-fall2018.github.io/storytelling-group-3-online/)
 
-[Project Description](Information_Visualization_Project_Proposal.pdf)
+[Project Description](Report/Information_Visualization_Project_Proposal.pdf)
