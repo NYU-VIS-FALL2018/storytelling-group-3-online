@@ -4,7 +4,7 @@
 
 Group 3 Online
 
-![EPL_Logo](images/EPL_Logo.png)
+![Page_Screenshot](images/Page_Screenshot.png)
 
 ## About
 The English Premier League is the top level of the English football league system. Contested by 20 clubs, it operates on a system of promotion and relegation. The top 4 teams of the English Premier League get qualified for the UEFA Champions League. The bottom 3 teams get relegated to a lower division league (EFL Championship).  
